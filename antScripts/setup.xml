@@ -1,0 +1,107 @@
+<project name="setup" basedir="./">
+	<echo message="Using java at: ${java.home}"/>
+	<echo message="Using ant properties at: ${basedir}/ant.properties"/>
+
+	<loadproperties srcfile="${basedir}/ant.properties" />
+
+	<property name="lib.dir" value="${basedir}/lib/runtime" />
+	<property name="tst.lib" value="${basedir}/lib/tstlib" />
+	<property name="compile.lib" value="${basedir}/lib/compile" />
+	<property name="shared.lib" value="${basedir}/lib/shared" />
+	<property name="client.lib" value="${basedir}/lib/client" />
+	<property name="ear.dir" value="${basedir}/ear" />
+	<property name="classes.dir" value="${basedir}/bin/classes" />
+	<property name="gen.dir" value="${basedir}/gen-src" />
+	<property name="src.dir" value="${basedir}/src" />
+	<property name="app.config" value="${basedir}/config"/>
+	<property name="release.dir" value="${basedir}/release" />
+	<property name="tmp.dir" value="${basedir}/tmp" />
+	<property name="scripts" value="${basedir}/antScripts"/>
+	<property name="templates" value="${basedir}/templates"/>
+	<property name="deploy.dir" value="${release.dir}/deploy"/>
+
+	<property name="ear.meta" value="${ear.dir}/META-INF"/>
+	<property name="defaultAppDir" 
+		value="${ear.meta}/ibmconfig/cells/defaultCell/applications/defaultApp/deployments/defaultApp"/>
+	<property name="test.dir" value="test"/>
+	<property name="unit.test.dir" value="${test.dir}/unit"/>
+	<property name="unit.test.src" value="${unit.test.dir}/unit-test-src"/>
+	<property name="integ.test.dir" value="${test.dir}/integ"/>
+    <property name="integ.test.src" value="${integ.test.dir}/integ-test-src"/>
+
+	<path id="project.classpath">
+		<fileset dir="${lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${compile.lib}">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${shared.lib}">
+			<include name="*.jar" />
+		</fileset>
+		<dirset dir="${classes.dir}"/>
+	</path>
+
+	<path id="unit.test.classpath">
+		<fileset dir="${lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${compile.lib}">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${shared.lib}">
+			<include name="*.jar" />
+		</fileset>
+		<dirset dir="${basedir}">
+			<include name="bin/classes"/>
+			<include name="test/unit/unit-test-src"/>
+			<include name="test/data"/>
+		</dirset>			
+	</path>
+
+	<path id="integ.test.classpath">
+		<fileset dir="${lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${client.lib}">
+			<include name="**/saaj*.jar" />
+		</fileset>
+		<fileset dir="${compile.lib}">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${shared.lib}">
+			<include name="*.jar" />
+		</fileset>
+		<dirset dir="${basedir}">
+			<include name="bin/classes"/>
+			<include name="test/integ/integ-test-src"/>
+			<include name="test/data"/>
+		</dirset>			
+	</path>
+
+	<path id="war.classpath">
+		<fileset dir="${lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+
+	<path id="client.classpath">
+		<fileset dir="${compile.lib}">
+			<include name="**.jar" />
+		</fileset>
+		<fileset dir="${client.lib}">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+	
+	<mkdir dir="${classes.dir}"/>	
+	<mkdir dir="${release.dir}"/>
+	<mkdir dir="${deploy.dir}"/>
+	<mkdir dir="${tmp.dir}"/>
+	<mkdir dir="${gen.dir}"/>
+	
+	<tstamp>
+		<format property="TODAY" pattern="yyyyMMdd" />
+	</tstamp>
+
+</project>
