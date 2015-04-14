@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<!-- The "realCalc" bean is currently set to the good implementation of Calc -->
+	<bean id="realCalc" class="com.aa.selfservice.cs.scratchpad.GoodCalc" />
+		
+	<!-- Declare a "student" bean that depends on a Calc interface,
+	requiring the injection of the realCalc bean -->
+	<bean id="student"
+		class = "com.aa.selfservice.cs.scratchpad.MathStudent">
+		<constructor-arg ref="realCalc" />
+	</bean>
+	
+	<!-- Declare an advice bean -->
+	<bean id="doSomethingAdvice" class="com.aa.selfservice.cs.scratchpad.aop.DoSomethingAdvice" />
+	
+	<!-- Create an advisor that interprets any method matching the specified regex as a pointcut.
+	The regex matches any method name with two "d" characters.
+	A pointcut is an opportunity to use the advice to augment the behaviors of the method. -->
+	<bean id="calcAdvisor"
+		class="org.springframework.aop.support.RegexpMethodPointcutAdvisor">
+		<property name="patterns">
+			<list>
+				<value>.*(d\w*d).*</value>
+			</list>
+		</property>
+ 
+		<property name="advice" ref="doSomethingAdvice" />
+	</bean>	
+	
+	<!-- Create a proxy of the calc interface that uses the calc advisor to apply new aspects
+	to the real calc bean.  When retrieving the "calc" bean from the Spring context, it will
+	have new aspects.  When retrieving the "realCalc" bean from the Spring context, it will not
+	have those new aspects.  Note that the "student" bean depends on "realCalc", not "calc", so
+	the student bean does not trigger the extra logging while using the calculator. -->
+	<bean id="calc"
+		class = "org.springframework.aop.framework.ProxyFactoryBean">
+		<property name="target" ref="realCalc" />
+		<property name="interceptorNames">
+			<list>
+				<value>calcAdvisor</value>
+			</list>
+		</property>
+	</bean>
+</beans>

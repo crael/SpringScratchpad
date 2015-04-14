@@ -1,0 +1,108 @@
+<project basedir="." default="coverage.test" name="Scratchpad_build">
+	<import file="${basedir}/antScripts/setup.xml" />
+	
+	<property name="reports.unit-test.dir" value="${test.dir}/test-results"/>
+	
+	<pathconvert property="classpath" pathsep=" ">
+		<path refid="war.classpath" />
+		<flattenmapper />
+	</pathconvert>
+	
+	<target name="coverage.test">
+		<ant antfile="${scripts}/coverage.xml" target="coverage.test" inheritall="true" />
+	</target>
+	
+	<!-- creates war -->
+	<target name="war" depends="clean,compile">
+		<copy todir="${ear.dir}/classes" overwrite="true">
+			<fileset dir="${classes.dir}">
+				<include name="**" />
+			</fileset>
+		</copy>
+		<jar destfile="${ear.dir}/${full.app.name}.war" basedir="${basedir}/WebRoot"
+			excludes="**/*.class">
+			<manifest>
+				<attribute name="Class-Path" value="config classes ${classpath}" />
+			</manifest>
+		</jar>
+	</target>
+
+	<!-- creates ear -->
+	<target name="ear" depends="clean,war">
+		<mkdir dir="${basedir}/release" />
+		<mkdir dir="${basedir}/release/deploy" />
+		<copy todir="${ear.dir}/config" overwrite="true">
+			<fileset dir="${app.config}">
+				<include name="log4j.*" />
+			</fileset>
+		</copy>
+		<copy todir="${ear.dir}" overwrite="true">
+			<fileset dir="${lib.dir}">
+				<include name="*.jar" />
+			</fileset>
+		</copy>
+		<jar destfile="${basedir}/release/deploy/${full.app.name}-${deploy.module.revision}.ear"
+			basedir="${ear.dir}">
+		</jar>
+	</target>
+
+	<!-- compiles server-side code including generated -->
+	<target name="compile">
+		<javac classpathref="project.classpath" destdir="${classes.dir}" debug="true" encoding="UTF-8" target="1.7">
+			<src path="${src.dir}"/>
+		</javac>
+	</target>
+
+	<target name="compileUnitTests">
+		<javac classpathref="unit.test.classpath" destdir="${unit.test.src}" debug="true" target="1.7">
+			<src path="${unit.test.src}"/>
+		</javac>
+	</target>
+	
+	<target name="runUnitTests" depends="compile, compileUnitTests">
+		<delete dir="${reports.unit-test.dir}" />
+		<mkdir dir="${reports.unit-test.dir}" />
+		<junit fork="yes"
+			filtertrace="true"
+			failureProperty="test.failure"
+			showoutput="on">
+				<classpath refid="unit.test.classpath" />
+				<formatter type="xml" usefile="true" />
+				<batchtest todir="${reports.unit-test.dir}">
+					<fileset dir="${unit.test.src}">
+						<include name="**/*.class" />
+					</fileset>
+				</batchtest>
+		</junit>
+		<fail message="test failed" if="test.failure" unless="environment.HUDSON_URL" />
+	</target>
+
+	<target name="runIntegTests" depends="compile">
+		<exec executable="st.exe" failonerror="true">
+			<arg value="-cmd" />
+			<arg value="-runtest" />
+			<arg value="-all" />
+			<arg value="${test.dir}/soatest" />
+		</exec>
+	</target>
+
+	<!-- removes generated files -->
+	<target name="clean" >
+		<delete dir="${release.dir}"  deleteonexit="true"/>
+		<delete dir="${tmp.dir}" deleteonexit="true"/>
+		<delete dir="${deploy.tester.dir}/classes" deleteonexit="true"/>
+		<delete dir="${deploy.tester.dir}/lib" deleteonexit="true"/>
+		<mkdir dir="${release.dir}"/>
+		<mkdir dir="${tmp.dir}"/>
+		<mkdir dir="${deploy.tester.dir}/lib"/>
+		<mkdir dir="${deploy.tester.dir}/classes"/>
+		<delete dir="${test.dir}" includes="**/*.class" deleteonexit="true"/>
+		<delete deleteonexit="true">
+			<fileset dir="${ear.dir}" includes="**/*.war" />
+			<fileset dir="${ear.dir}" includes="**/*.jar" />
+			<fileset dir="${classes.dir}" includes="**/*.class" />
+			<fileset dir="${classes.dir}" includes="log4j.*" />
+			<fileset dir="${web.inf.lib.dir}" includes="**/*.jar" />
+		</delete>
+	</target>
+</project>
