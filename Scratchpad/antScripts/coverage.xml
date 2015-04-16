@@ -1,0 +1,130 @@
+<project basedir="../" default="coverage.test" name="Cobertura_Build">
+	<import file="setup.xml" />
+	
+	<!-- Code coverage properties -->
+	<property name="cobertura.dir" value="${test.dir}/cobertura"/>
+	<property name="cobertura.jar.dir" value="${cobertura.dir}/cobertura-2.0.3"/>
+	<property name="cobertura.ser" value="${cobertura.dir}/cobertura.ser"/>
+	<property name="cobertura.instrumented.dir" value="${cobertura.dir}/instrumented"/>
+	<property name="cobertura.reports.dir" value="${cobertura.dir}/reports/junit-xml"/>
+	
+    <property name="junit.fork"        value="true"/>
+    <property name="junit.filtertrace" value="true"/>
+	
+
+	<path id="cobertura.classpath">
+		<fileset dir="${cobertura.jar.dir}">
+			<include name="cobertura*.jar" />
+			<include name="lib/**/*.jar" />
+		</fileset>
+	</path>
+	
+	<target name="coverage.init.task">
+		<taskdef classpathref="cobertura.classpath" resource="tasks.properties"/>
+	</target>
+	
+	<target name="coverage.init" depends="coverage.init.task">
+<!-- 
+		<delete dir="${cobertura.dir}"/>
+ 		<mkdir dir="${cobertura.dir}" />
+ -->
+ 		<mkdir dir="${cobertura.reports.dir}"/>
+		<echo>Coverage init complete</echo>
+	</target>
+	
+	<target name="compile">
+		<javac classpathref="project.classpath" destdir="${classes.dir}" debug="true">
+			<src path="${src.dir}"/>
+		</javac>
+	</target>
+	
+	<target name="compileUnitTests">
+		<javac classpathref="unit.test.classpath" destdir="${unit.test.src}" debug="true">
+			<src path="${unit.test.src}"/>
+		</javac>
+	</target>
+	
+	<target name="coverage.instrument" depends="coverage.init,compile,compileUnitTests">
+		<!--
+			Remove the coverage data file and any old instrumentation.
+		-->
+		<delete file="${cobertura.ser}"/>
+		<delete dir="${cobertura.instrumented.dir}" />
+
+		<!--
+			Instrument the application classes, writing the
+			instrumented classes to their own folder.
+		-->
+		<cobertura-instrument datafile="${cobertura.ser}" todir="${cobertura.instrumented.dir}">
+			<!--
+				The following line causes instrument to ignore any
+				source line containing a reference to log4j, for the
+				purposes of coverage reporting.
+			-->
+			<ignore regex="org.apache.log4j.*" />
+
+			<fileset dir="${classes.dir}">
+				<!--
+					Instrument all the application classes, but
+					don't instrument the test classes.
+				-->
+				<include name="**/*.class" />
+			</fileset>
+		</cobertura-instrument>
+	</target>
+
+	<target name="coverage.test" depends="coverage.init, coverage.instrument" description="Run junit tests and collect code coverage info" >
+		<junit
+				printsummary="on"
+				filtertrace="${junit.filtertrace}"
+				showoutput="on"
+				fork="yes" 
+				forkmode="once" 
+				dir="${unit.test.src}" 
+				failureProperty="test.failed">
+	    	<jvmarg value="-Xms512m"/>
+			<jvmarg value="-Xmx1024m"/>
+			<jvmarg value="-XX:MaxPermSize=512m"/>
+
+			<!--
+				Specify the name of the coverage data file to use.
+			-->
+			<sysproperty key="net.sourceforge.cobertura.datafile" file="${cobertura.ser}" />
+
+			<!--"
+				Note the classpath order: instrumented classes are before the
+				original (uninstrumented) classes.  This is important.
+			-->
+			<classpath location="${cobertura.instrumented.dir}" />
+			<classpath location="${classes.dir}" />
+
+		    <classpath location="${unit.test.src}" />
+		 	<classpath refid="unit.test.classpath" />
+<!-- 
+		    <classpath refid="unit-test-jars" />
+		 	<classpath location="test/unit/config/"/>
+		 	<classpath location="web/"/>
+-->
+			<!--
+				The instrumented classes reference classes used by the
+				Cobertura runtime, so Cobertura and its dependencies
+				must be on your classpath.
+			-->
+			<classpath refid="cobertura.classpath" />
+
+			<formatter type="xml" />
+			<test name="${testcase}" todir="${cobertura.reports.dir}" if="testcase" />
+			<batchtest  todir="${cobertura.reports.dir}">
+				<fileset dir="${unit.test.src}">
+					<include name="**/*.class" />
+				</fileset>
+			</batchtest>
+		</junit>
+		<cobertura-report datafile="${cobertura.ser}" srcdir="${src.dir}" destdir="${cobertura.reports.dir}" format="xml" />
+	</target>
+
+	<target name="coverage-report" depends="coverage.init.task" description="Rerun building XML report from .ser file">
+		<!-- Only needed when the unit tests die without report generation -->
+		<cobertura-report datafile="${cobertura.ser}" srcdir="${src.dir}" destdir="${cobertura.reports.dir}" format="xml" />
+	</target>
+</project>
